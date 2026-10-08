@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>수학 교구 대여</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F5F9; --surface:#FFFFFF; --ink:#18233F; --muted:#5B6782; --line:#D9DEE8;
+  --yellow:#F2B705; --red:#E0453A; --blue:#2F6FDE; --green:#2E9B52; --orange:#F07B1F;
+  --soft-blue:#E6EEFC; --soft-red:#FCE9E7; --soft-green:#E3F3E8;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#111827; --surface:#1A2335; --ink:#EEF1F7; --muted:#A3AEC5; --line:#2E3A52;
+    --soft-blue:#1F2E4F; --soft-red:#3E2226; --soft-green:#1C3A29; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111827; --surface:#1A2335; --ink:#EEF1F7; --muted:#A3AEC5; --line:#2E3A52;
+  --soft-blue:#1F2E4F; --soft-red:#3E2226; --soft-green:#1C3A29; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+
+/* Header: pattern-block strip */
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:28px}
+.brand{display:flex;align-items:center;gap:16px}
+.blocks{display:flex;gap:3px;align-items:flex-end}
+.blocks svg{display:block}
+h1{margin:0;font-size:clamp(26px,4vw,36px);font-weight:700;letter-spacing:-0.02em;line-height:1.15}
+.sub{margin:4px 0 0;color:var(--muted);font-size:15px}
+.stats{display:flex;gap:22px}
+.stat{text-align:right}
+.stat b{display:block;font-size:26px;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{font-size:13px;color:var(--muted)}
+.stat.late b{color:var(--red)}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start}
+@media (max-width:880px){.grid{grid-template-columns:1fr}}
+
+h2{font-size:19px;margin:0 0 14px;font-weight:700;letter-spacing:-0.01em}
+
+/* Catalog */
+.catalog{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
+.item{position:relative;background:var(--surface);border:2px solid var(--line);border-radius:14px;
+  padding:14px 14px 12px;display:flex;flex-direction:column;gap:8px;cursor:pointer;text-align:left;
+  transition:border-color .15s}
+.item:hover{border-color:var(--muted)}
+.item.on{border-color:var(--blue);background:var(--soft-blue)}
+.item.out{opacity:.6;cursor:not-allowed}
+.item .icon{height:52px;display:flex;align-items:center}
+.item .name{font-weight:700;font-size:16px;line-height:1.3}
+.item .avail{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.item .avail b{color:var(--ink)}
+.item.out .avail b{color:var(--red)}
+.item .area{font-size:13px;color:var(--blue);font-weight:500;margin-top:-4px}
+.tag.plan{display:inline-block;font-size:12px;font-weight:700;background:var(--soft-red);color:var(--red);border-radius:6px;padding:0 6px}
+.item .video{font-size:13px;color:var(--muted);text-decoration:underline;text-underline-offset:3px;margin-top:auto}
+.item .video:hover{color:var(--blue)}
+.item .photo{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:9px;background:var(--bg);display:block}
+.item .upl{font-size:13px;font-weight:500;color:var(--blue);cursor:pointer;align-self:flex-start;border:1.5px solid var(--soft-blue);border-radius:7px;padding:2px 9px;background:var(--soft-blue)}
+.item .upl:hover{border-color:var(--blue)}
+.item .upl:focus-within{outline:3px solid var(--blue);outline-offset:2px}
+.state{padding:28px;text-align:center;color:var(--muted);background:var(--surface);border:1.5px dashed var(--line);border-radius:12px;grid-column:1/-1}
+.state b{color:var(--ink)}
+.saving{opacity:.6;pointer-events:none}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.filters button{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:14px;cursor:pointer}
+.filters button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+.qty{display:flex;align-items:center;gap:6px;margin-top:2px}
+.qty button{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);
+  font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center}
+.qty button:disabled{opacity:.35;cursor:not-allowed}
+.qty output{min-width:26px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.check{position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:50%;background:var(--blue);
+  color:#fff;display:none;place-items:center;font-size:13px;font-weight:700}
+.item.on .check{display:grid}
+
+/* Form */
+.panel{background:var(--surface);border:2px solid var(--ink);border-radius:16px;padding:20px;
+  position:sticky;top:calc(16px + env(safe-area-inset-top,0px))}
+@media (max-width:880px){.panel{position:static}}
+label{display:block;font-size:14px;font-weight:500;margin:0 0 6px}
+.field{margin-bottom:14px}
+input[type=text],input[type=date],textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);
+  border-radius:10px;background:var(--bg);font-size:16px}
+input:focus,textarea:focus{border-color:var(--blue);outline:none}
+textarea{resize:vertical;min-height:58px}
+.dates{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dates>div{min-width:0}
+input[type=date]{min-width:0;max-width:100%}
+.quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.quick button{border:1.5px solid var(--line);background:transparent;border-radius:999px;padding:3px 11px;font-size:13px;cursor:pointer}
+.quick button:hover{border-color:var(--blue);color:var(--blue)}
+.days{font-size:13px;color:var(--muted);margin-top:6px}
+.picked{border-top:1.5px dashed var(--line);border-bottom:1.5px dashed var(--line);padding:12px 0;margin:4px 0 16px}
+.picked ul{list-style:none;margin:0;padding:0}
+.picked li{display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:15px}
+.picked li span:last-child{font-variant-numeric:tabular-nums;font-weight:700}
+.picked .empty{color:var(--muted);font-size:14px}
+.primary{width:100%;padding:13px;border:none;border-radius:12px;background:var(--ink);color:var(--bg);
+  font-size:17px;font-weight:700;cursor:pointer}
+.primary:disabled{opacity:.4;cursor:not-allowed}
+.err{color:var(--red);font-size:14px;margin:10px 0 0;min-height:0}
+
+/* Rentals */
+.rentals{margin-top:40px}
+.rhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.rhead h2{margin:0}
+.tabs{display:flex;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:3px}
+.tabs button{border:none;background:transparent;padding:6px 14px;border-radius:7px;cursor:pointer;font-size:14px}
+.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg);font-weight:700}
+.search{padding:8px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);font-size:15px;min-width:180px}
+.list{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--surface);border:1.5px solid var(--line);border-left:6px solid var(--blue);border-radius:12px;
+  padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 16px;align-items:center}
+.card.late{border-left-color:var(--red)}
+.card.done{border-left-color:var(--line);opacity:.75}
+.card .who{font-weight:700;font-size:17px}
+.card .who small{font-weight:400;color:var(--muted);font-size:14px;margin-left:6px}
+.card .what{font-size:15px}
+.card .when{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.card .note{font-size:14px;color:var(--muted);grid-column:1/-1}
+.badge{display:inline-block;font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;margin-left:8px;vertical-align:2px}
+.badge.late{background:var(--soft-red);color:var(--red)}
+.badge.soon{background:var(--soft-blue);color:var(--blue)}
+.badge.ok{background:var(--soft-green);color:var(--green)}
+.actions{display:flex;flex-direction:column;gap:6px;grid-row:1/4;grid-column:2}
+.actions button{border:1.5px solid var(--ink);background:transparent;border-radius:9px;padding:7px 14px;cursor:pointer;font-size:14px;font-weight:700;white-space:nowrap}
+.actions button.ghost{border-color:var(--line);font-weight:400;color:var(--muted)}
+.actions button:hover{background:var(--ink);color:var(--bg)}
+.actions button.ghost:hover{background:var(--soft-red);color:var(--red);border-color:var(--red)}
+@media (max-width:520px){
+  .card{grid-template-columns:1fr}
+  .actions{grid-row:auto;grid-column:auto;flex-direction:row}
+}
+.none{padding:30px;text-align:center;color:var(--muted);background:var(--surface);border:1.5px dashed var(--line);border-radius:12px}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);
+  background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-weight:500;opacity:0;
+  transition:opacity .2s,transform .2s;pointer-events:none;z-index:10;max-width:90vw}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.admin-btn{border:none;background:none;color:var(--muted);font-size:12px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:2px 4px}
+.admin-btn:hover{color:var(--ink)}
+.mode{font-size:12px;color:var(--muted);margin-top:24px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="blocks" aria-hidden="true">
+        <svg width="34" height="30" viewBox="0 0 34 30"><polygon points="8.5,0 25.5,0 34,15 25.5,30 8.5,30 0,15" fill="var(--yellow)"/></svg>
+        <svg width="20" height="30" viewBox="0 0 20 30"><polygon points="10,0 20,15 10,30 0,15" fill="var(--blue)"/></svg>
+        <svg width="30" height="26" viewBox="0 0 30 26"><polygon points="15,0 30,26 0,26" fill="var(--green)"/></svg>
+        <svg width="40" height="18" viewBox="0 0 40 18"><polygon points="10,0 30,0 40,18 0,18" fill="var(--red)"/></svg>
+      </div>
+      <div>
+        <h1>수학 교구 대여</h1>
+        <p class="sub">K-STEM 탐구기반 수학 수업 물품 · 빌릴 교구를 고르고, 기간과 학년·반을 적어 주세요.</p>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="statActive">0</b><span>대여 중</span></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section aria-labelledby="catTitle">
+      <h2 id="catTitle">교구 고르기</h2>
+      <div class="filters" id="filters" aria-label="영역별 보기"></div>
+      <div class="catalog" id="catalog"></div>
+    </section>
+
+    <aside class="panel" aria-labelledby="formTitle">
+      <h2 id="formTitle">대여 정보</h2>
+      <div class="field">
+        <label for="group">학년·반</label>
+        <input type="text" id="group" placeholder="예: 3학년 2반">
+      </div>
+      <div class="field">
+        <div class="dates">
+          <div><label for="start">대여일</label><input type="date" id="start"></div>
+          <div><label for="end">반납 예정일</label><input type="date" id="end"></div>
+        </div>
+        <div class="quick" id="quick">
+          <button type="button" data-d="0">당일</button>
+          <button type="button" data-d="1">1일</button>
+          <button type="button" data-d="7">1주</button>
+          <button type="button" data-d="14">2주</button>
+        </div>
+        <div class="days" id="days"></div>
+      </div>
+      <div class="field">
+        <label for="note">메모 (선택)</label>
+        <textarea id="note" placeholder="수업 단원, 사용 장소 등"></textarea>
+      </div>
+      <div class="picked" aria-live="polite">
+        <label>선택한 교구</label>
+        <ul id="picked"></ul>
+      </div>
+      <button class="primary" id="submit" type="button">대여하기</button>
+      <p class="err" id="err" role="alert"></p>
+    </aside>
+  </div>
+
+  <section class="rentals" aria-labelledby="listTitle">
+    <div class="rhead">
+      <h2 id="listTitle">대여 현황</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <input class="search" id="search" type="search" placeholder="학년·반, 교구 검색" aria-label="대여 기록 검색">
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" data-tab="active">대여 중</button>
+          <button role="tab" aria-selected="false" data-tab="returned">반납 완료</button>
+          <button role="tab" aria-selected="false" data-tab="all">전체</button>
+        </div>
+      </div>
+    </div>
+    <div class="list" id="list"></div>
+  </section>
+  <p class="mode" id="mode"></p>
+  <p class="mode"><span id="adminState"></span> <button type="button" class="admin-btn" id="adminBtn">관리자 로그인</button></p>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ============================================================
+   설정: Apps Script 웹 앱 주소를 따옴표 안에 붙여 넣으세요.
+   예) 'https://script.google.com/macros/s/AKfy..../exec'
+   ============================================================ */
+const API_URL = 'https://script.google.com/macros/s/AKfycbyRsWhDgHrR-vQCbGXherkVFhbw9tdhXvNQoGgx4M07mAFTWon3mwsK0d4rafnjL6qT/exec';
+
+/* 사진 폴더: images/물품명.jpg 형식으로 올리면 자동으로 보입니다.
+   시트에 '사진' 열을 만들어 파일명(예: blokus.png)이나 사진 주소를 적어도 됩니다. */
+const PHOTO_DIR = 'images/';
+
+const ICON = {
+  frac:'<svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="var(--soft-blue)" stroke="var(--blue)" stroke-width="2.5"/><path d="M24 24 L24 2 A22 22 0 0 1 46 24 Z" fill="var(--blue)"/><path d="M24 2v44M2 24h44" stroke="var(--surface)" stroke-width="1.5"/></svg>',
+  dec:'<svg width="60" height="44" viewBox="0 0 60 44"><rect x="0" y="4" width="60" height="36" rx="3" fill="var(--soft-green)" stroke="var(--green)" stroke-width="2"/><rect x="0" y="4" width="18" height="36" rx="3" fill="var(--green)"/><path d="M6 4v36M12 4v36M24 4v36M30 4v36M36 4v36M42 4v36M48 4v36M54 4v36" stroke="var(--surface)" stroke-width="1.2"/></svg>',
+  pattern:'<svg width="70" height="30" viewBox="0 0 70 30"><circle cx="8" cy="15" r="7" fill="var(--orange)"/><rect x="20" y="8" width="14" height="14" rx="2" fill="var(--blue)"/><circle cx="44" cy="15" r="7" fill="var(--orange)"/><rect x="56" y="8" width="14" height="14" rx="2" fill="var(--blue)" opacity=".35"/></svg>',
+  shape:'<svg width="70" height="40" viewBox="0 0 70 40"><polygon points="7,5 21,5 28,17 21,29 7,29 0,17" fill="var(--yellow)"/><polygon points="38,5 46,17 38,29 30,17" fill="var(--blue)"/><polygon points="58,5 70,29 46,29" fill="var(--green)"/></svg>',
+  move:'<svg width="64" height="44" viewBox="0 0 64 44"><path d="M2 12h12v12h12v12H2z" fill="var(--red)" opacity=".35"/><path d="M36 4h12v12h12v12H36z" fill="var(--red)"/><path d="M22 22 Q28 8 34 12" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="3 3"/><path d="M30 10l5 2-3 4" fill="none" stroke="var(--ink)" stroke-width="2"/></svg>',
+  ops:'<svg width="52" height="52" viewBox="0 0 52 52"><rect width="24" height="24" rx="5" fill="var(--red)"/><rect x="28" width="24" height="24" rx="5" fill="var(--blue)"/><rect y="28" width="24" height="24" rx="5" fill="var(--green)"/><rect x="28" y="28" width="24" height="24" rx="5" fill="var(--yellow)"/><g stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M12 6v12M6 12h12M34 12h12M34 34l12 12M46 34l-12 12"/></g><g fill="#fff"><circle cx="12" cy="34" r="2.2"/><circle cx="12" cy="46" r="2.2"/></g><path d="M5 40h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>',
+  count:'<svg width="64" height="40" viewBox="0 0 64 40"><rect x="0" y="6" width="64" height="28" rx="14" fill="#C9965A"/><g fill="#8A5A2B">'+[12,26,40,54].map(x=>`<circle cx="${x}" cy="20" r="6"/>`).join('')+'</g><g fill="var(--blue)"><circle cx="11" cy="18" r="2"/><circle cx="14" cy="22" r="2"/><circle cx="26" cy="20" r="2"/><circle cx="52" cy="18" r="2"/><circle cx="56" cy="22" r="2"/><circle cx="53" cy="23" r="2" fill="var(--red)"/></g></svg>',
+};
+
+function iconFor(area){
+  const a = area||'';
+  if(a.includes('분수')) return ICON.frac;
+  if(a.includes('소수')) return ICON.dec;
+  if(a.includes('규칙')) return ICON.pattern;
+  if(a.includes('이동')) return ICON.move;
+  if(a.includes('도형')) return ICON.shape;
+  if(a.includes('수세기')) return ICON.count;
+  return ICON.ops;
+}
+
+/* ---------- 상태 ---------- */
+let ITEMS = [], byId = {};
+let rentals = [];
+let cart = {};
+let tab = 'active', query = '', area = '전체';
+let loaded = false, loadError = '', busy = false;
+const brokenPhotos = new Set();
+const CODE_KEY = 'math-rental-code';
+let code = ''; try{ code = localStorage.getItem(CODE_KEY)||''; }catch{}
+// 관리자 암호는 브라우저를 닫으면 사라지도록 sessionStorage에 보관 (공용 컴퓨터 대비)
+const ADMIN_KEY = 'math-rental-admin';
+let adminCode = ''; try{ adminCode = sessionStorage.getItem(ADMIN_KEY)||''; }catch{}
+const ADMIN_MSG = {
+  ADMIN: '관리자 암호가 맞지 않습니다.',
+  ADMIN_LOCKED: '암호를 여러 번 틀려 10분 동안 관리자 로그인이 막혔습니다.',
+  ADMIN_UNSET: '관리자 암호가 아직 설정되지 않았습니다. Code.gs의 ADMIN_CODE를 정해 주세요.',
+};
+function setAdmin(c){
+  adminCode = c;
+  try{ c ? sessionStorage.setItem(ADMIN_KEY, c) : sessionStorage.removeItem(ADMIN_KEY); }catch{}
+  renderAdmin(); renderList();
+}
+function renderAdmin(){
+  const b = $('#adminBtn'); if(!b) return;
+  b.textContent = adminCode ? '관리자 로그아웃' : '관리자 로그인';
+  $('#adminState').textContent = adminCode ? '관리자 모드: 반납 지연 표시와 기록 삭제를 사용할 수 있습니다.' : '';
+}
+
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today = () => ymd(new Date());
+const addDays = (s,n) => { const d = new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return ymd(d); };
+const diffDays = (a,b) => Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00'))/86400000);
+const fmt = s => { if(!s) return ''; const [y,m,d] = s.split('-'); const w='일월화수목금토'[new Date(s+'T00:00:00').getDay()]; return `${+m}월 ${+d}일(${w})`; };
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- 서버 통신 ---------- */
+const API = String(API_URL).trim();
+const notConfigured = () => !/^https:\/\//.test(API);
+
+async function api(action, body = {}, retried = false, apply = true){
+  if(notConfigured()) throw new Error('SETUP');
+  let res;
+  if(action === 'list'){
+    res = await fetch(`${API}?action=list&code=${encodeURIComponent(code)}&t=${Date.now()}`);
+  }else{
+    // text/plain으로 보내야 Apps Script가 추가 확인 요청 없이 받습니다.
+    res = await fetch(API, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action, code, ...body }) });
+  }
+  let data;
+  try{ data = await res.json(); }catch{ throw new Error('서버 응답을 읽지 못했습니다. 웹 앱 배포 설정(액세스: 모든 사용자)을 확인해 주세요.'); }
+  if(!data.ok){
+    if(data.error === 'PASSCODE' && !retried){
+      const input = prompt(code ? '암호가 맞지 않습니다. 다시 입력해 주세요.' : '교구 대여 앱 암호를 입력해 주세요.');
+      if(input == null) throw new Error('암호를 입력해야 사용할 수 있습니다.');
+      code = input.trim(); try{ localStorage.setItem(CODE_KEY, code); }catch{}
+      return api(action, body, true, apply);
+    }
+    if(ADMIN_MSG[data.error]){ const e = new Error(ADMIN_MSG[data.error]); e.admin = true; throw e; }
+    throw new Error(data.error === 'PASSCODE' ? '암호가 맞지 않습니다.' : data.error);
+  }
+  if(apply) applyData(data);
+  return data;
+}
+
+const CACHE_KEY = 'math-rental-cache';
+let lastKey = '', dataChanged = false;
+function applyData(data, fromCache = false){
+  const key = JSON.stringify([data.items, data.rentals]);
+  dataChanged = key !== lastKey || !loaded;
+  if(!dataChanged){ loadError = ''; return; }
+  lastKey = key;
+  if(!fromCache){ try{ localStorage.setItem(CACHE_KEY, JSON.stringify({items:data.items, rentals:data.rentals})); }catch{} }
+  ITEMS = (data.items||[]).map(i=>({ ...i, id:i.name, unit:'세트', icon:iconFor(i.area) }));
+  byId = Object.fromEntries(ITEMS.map(i=>[i.id,i]));
+  rentals = data.rentals||[];
+  loaded = true; loadError = '';
+}
+
+async function refresh(){
+  if(pending) return;
+  try{ await api('list'); if(!dataChanged) return; }
+  catch(e){ if(!loaded) loadError = e.message; else { console.warn(e); return; } }
+  if(pending) return; // 그사이 시작된 저장이 있으면 그 결과를 기다림
+  renderAll();
+}
+
+/* 저장 작업: 화면에 먼저 반영하고(낙관적 업데이트), 서버 결과로 확정 */
+let pending = 0;
+async function write(action, body, optimistic, rollback){
+  pending++;
+  if(optimistic) optimistic();
+  renderAll();
+  try{
+    const data = await api(action, body, false, false);
+    pending--;
+    if(!pending){ applyData(data); renderAll(); }
+    return data;
+  }catch(e){
+    pending--;
+    if(rollback) rollback();
+    renderAll();
+    if(!pending) refresh();
+    throw e;
+  }
+}
+
+function inUse(itemId){
+  return rentals.filter(r=>r.status==='active')
+    .reduce((sum,r)=>sum+(r.items||[]).filter(x=>x.id===itemId).reduce((a,x)=>a+(+x.qty||0),0),0);
+}
+const available = id => { const it=byId[id]; if(!it) return 0; return it.planned ? 0 : Math.max(0, it.stock - inUse(id)); };
+
+/* ---------- 카탈로그 ---------- */
+function photoSrc(it){
+  if(it.photo) return /^https?:\/\//.test(it.photo) ? it.photo : PHOTO_DIR + encodeURIComponent(it.photo);
+  return PHOTO_DIR + encodeURIComponent(it.name) + '.jpg';
+}
+function renderCatalog(){
+  const el = $('#catalog');
+  if(!loaded){
+    $('#filters').innerHTML = '';
+    if(loadError === 'SETUP'){
+      el.innerHTML = `<div class="state"><b>아직 구글 시트와 연결되지 않았습니다.</b><br>index.html에서 Ctrl+F로 <b>API_URL</b>을 찾아, 따옴표 안에 Apps Script 웹 앱 주소(https://script.google.com/…/exec)를 넣어 주세요.</div>`;
+    }else if(loadError){
+      el.innerHTML = `<div class="state"><b>물품 목록을 불러오지 못했습니다.</b><br>${esc(loadError)}<br><br><button type="button" class="quick-retry" onclick="refresh()">다시 불러오기</button></div>`;
+    }else{
+      el.innerHTML = `<div class="state">구글 시트에서 물품 목록을 불러오는 중…</div>`;
+    }
+    return;
+  }
+  const areas = ['전체', ...new Set(ITEMS.map(i=>i.area).filter(Boolean))];
+  if(!areas.includes(area)) area = '전체';
+  $('#filters').innerHTML = areas.map(a=>`<button type="button" data-area="${esc(a)}" aria-pressed="${a===area}">${esc(a)}</button>`).join('');
+  const list = ITEMS.filter(it=>area==='전체'||it.area===area);
+  if(!list.length){ el.innerHTML = `<div class="state">'물품 목록' 탭에 물품이 없습니다. 시트에 물품명과 수량을 적어 주세요.</div>`; return; }
+  el.innerHTML = list.map(it=>{
+    const av = available(it.id), q = cart[it.id]||0;
+    const cls = ['item', q?'on':'', av===0&&!q?'out':''].join(' ');
+    const stockLine = it.planned
+      ? `<span class="tag plan">구입 예정</span> ${it.stock}${it.unit} 들어올 예정`
+      : `남은 수량 <b>${av}</b> / ${it.stock}${it.unit}`;
+    const src = photoSrc(it);
+    const pic = brokenPhotos.has(src)
+      ? `<div class="icon" aria-hidden="true">${it.icon}</div>`
+      : `<img class="photo" src="${esc(src)}" alt="${esc(it.name)} 사진" loading="lazy" data-src="${esc(src)}">`;
+    return `<div class="${cls}" data-id="${esc(it.id)}" role="group" aria-label="${esc(it.name)}">
+      <span class="check" aria-hidden="true">✓</span>
+      ${pic}
+      <div class="name">${esc(it.name)}</div>
+      ${it.area?`<div class="area">${esc(it.area)}</div>`:''}
+      <div class="avail">${stockLine}</div>
+      ${it.planned ? '' : `<div class="qty">
+        <button type="button" data-act="minus" aria-label="${esc(it.name)} 하나 빼기" ${q?'':'disabled'}>−</button>
+        <output aria-live="polite">${q}</output>
+        <button type="button" data-act="plus" aria-label="${esc(it.name)} 하나 더하기" ${q>=av?'disabled':''}>+</button>
+      </div>`}
+      ${it.video ? `<a class="video" href="${esc(it.video)}" target="_blank" rel="noopener">사용법 영상 보기</a>` : ''}
+    </div>`;
+  }).join('');
+}
+// 사진 파일이 없으면 영역 아이콘으로 바꿔 보여 줌
+document.addEventListener('error', e=>{
+  const img = e.target;
+  if(!(img instanceof HTMLImageElement) || !img.classList.contains('photo')) return;
+  brokenPhotos.add(img.dataset.src);
+  const id = img.closest('.item')?.dataset.id;
+  const div = document.createElement('div'); div.className='icon'; div.setAttribute('aria-hidden','true');
+  div.innerHTML = byId[id]?.icon || '';
+  img.replaceWith(div);
+}, true);
+
+$('#filters').addEventListener('click', e=>{
+  const a = e.target.closest('button')?.dataset.area; if(!a) return; area=a; renderCatalog();
+});
+$('#catalog').addEventListener('click', e=>{
+  if(e.target.closest('a')) return;
+  const card = e.target.closest('.item'); if(!card) return;
+  const id = card.dataset.id, av = available(id), q = cart[id]||0;
+  const act = e.target.closest('button')?.dataset.act;
+  if(act==='minus'){ if(q<=1) delete cart[id]; else cart[id]=q-1; }
+  else if(act==='plus'){ if(q<av) cart[id]=q+1; }
+  else { if(q) delete cart[id]; else if(av>0) cart[id]=1; }
+  renderCatalog(); renderPicked();
+});
+
+/* ---------- 폼 ---------- */
+function renderPicked(){
+  const ids = Object.keys(cart);
+  $('#picked').innerHTML = ids.length
+    ? ids.map(id=>`<li><span>${esc(id)}</span><span>${cart[id]}${byId[id]?.unit||''}</span></li>`).join('')
+    : '<li class="empty">왼쪽에서 교구를 눌러 담아 주세요.</li>';
+}
+function renderDays(){
+  const s=$('#start').value, e=$('#end').value;
+  $('#end').min = s || '';
+  if(!s||!e){ $('#days').textContent=''; return; }
+  const n = diffDays(s,e);
+  $('#days').textContent = n<0 ? '반납 예정일이 대여일보다 빠릅니다.' : n===0 ? '당일 반납' : `${n}일 동안 대여`;
+}
+// 열 때마다 대여일은 오늘, 반납 예정일은 1주 뒤로 자동 설정 (직접 바꿀 수 있음)
+$('#start').value = today(); $('#end').value = addDays(today(),7);
+$('#start').addEventListener('change',()=>{
+  const s=$('#start').value, e=$('#end').value;
+  if(s && e && diffDays(s,e)<0) $('#end').value = s; // 반납일이 대여일보다 앞서지 않게
+  renderDays();
+});
+$('#end').addEventListener('change',renderDays);
+$('#quick').addEventListener('click',e=>{
+  const d = e.target.dataset.d; if(d==null) return;
+  if(!$('#start').value) $('#start').value = today();
+  $('#end').value = addDays($('#start').value, +d); renderDays();
+});
+
+$('#submit').addEventListener('click', async ()=>{
+  const err = $('#err'); err.textContent='';
+  if(!loaded) return err.textContent='물품 목록을 불러온 뒤에 대여할 수 있습니다.';
+  const group = $('#group').value.trim();
+  const start = $('#start').value, end = $('#end').value;
+  const ids = Object.keys(cart);
+  if(!ids.length) return err.textContent='대여할 교구를 하나 이상 골라 주세요.';
+  if(!group) { $('#group').focus(); return err.textContent='학년·반을 적어 주세요.'; }
+  if(!start||!end) return err.textContent='대여일과 반납 예정일을 정해 주세요.';
+  if(diffDays(start,end)<0) return err.textContent='반납 예정일은 대여일과 같거나 그 이후여야 합니다.';
+  const over = ids.find(id=>cart[id]>available(id));
+  if(over) return err.textContent=`${over} 수량이 부족합니다. 남은 수량: ${available(over)}`;
+
+  const note = $('#note').value.trim();
+  const items = ids.map(id=>({id, qty:cart[id]}));
+  const savedCart = {...cart};
+  const temp = { id:'tmp'+Date.now(), createdAt:Date.now(), borrower:'', group, start, end, status:'active', returnedOn:'', note, items, pending:true };
+  tab='active'; syncTabs();
+  write('create', { rental:{ group, start, end, note, items } },
+    ()=>{ rentals = [...rentals, temp]; cart = {}; $('#note').value=''; },
+    ()=>{ rentals = rentals.filter(x=>x!==temp); cart = savedCart; if(!$('#note').value) $('#note').value = note; })
+    .then(()=>toast(`${group} 대여를 등록했습니다.`))
+    .catch(e=>{ err.textContent = e.message === 'SETUP' ? '구글 시트와 연결된 뒤에 대여할 수 있습니다.' : e.message; toast('대여를 저장하지 못했습니다.'); });
+});
+
+/* ---------- 대여 현황 ---------- */
+const who = r => r.group || r.borrower || '이름 없음';
+function statusOf(r){
+  if(r.status==='returned') return {cls:'done', badge:'<span class="badge ok">반납 완료</span>'};
+  const left = diffDays(today(), r.end);
+  // 지연 정보는 관리자 모드에서만 표시
+  if(left<0) return adminCode ? {cls:'late', badge:`<span class="badge late">${-left}일 지연</span>`} : {cls:'', badge:''};
+  if(left===0) return {cls:'', badge:'<span class="badge soon">오늘 반납</span>'};
+  if(left<=2) return {cls:'', badge:`<span class="badge soon">${left}일 남음</span>`};
+  return {cls:'', badge:''};
+}
+function renderList(){
+  const el = $('#list');
+  if(!loaded){ el.innerHTML = ''; return; }
+  const q = query.toLowerCase();
+  let rows = rentals.filter(r=> tab==='all' || r.status===tab);
+  if(q) rows = rows.filter(r=>[r.borrower,r.group,r.note,...(r.items||[]).map(x=>x.id)].join(' ').toLowerCase().includes(q));
+  rows.sort((a,b)=> tab==='active' ? a.end.localeCompare(b.end) : (b.createdAt||0)-(a.createdAt||0));
+  if(!rows.length){
+    el.innerHTML = `<div class="none">${q ? '검색 결과가 없습니다.' : tab==='active' ? '지금 대여 중인 교구가 없습니다. 위에서 교구를 골라 대여를 등록해 보세요.' : '기록이 없습니다.'}</div>`;
+    return;
+  }
+  el.innerHTML = rows.map(r=>{
+    const st = statusOf(r);
+    const items = (r.items||[]).map(x=>`${esc(x.id)} ${x.qty}세트`).join(', ');
+    const when = r.status==='returned' && r.returnedOn
+      ? `${fmt(r.start)} ~ ${fmt(r.end)} · ${fmt(r.returnedOn)} 반납`
+      : `${fmt(r.start)} ~ ${fmt(r.end)}`;
+    return `<article class="card ${st.cls}">
+      <div class="who">${esc(who(r))}${r.borrower&&r.group?`<small>${esc(r.borrower)}</small>`:''}${r.pending?'<span class="badge soon">저장 중…</span>':st.badge}</div>
+      <div class="actions">
+        ${r.pending ? '' : r.status==='active'
+          ? `<button type="button" data-ret="${esc(r.id)}">반납 처리</button>`
+          : `<button type="button" data-undo="${esc(r.id)}">반납 취소</button>`}
+        ${adminCode ? `<button type="button" class="ghost" data-del="${esc(r.id)}">기록 삭제</button>` : ''}
+      </div>
+      <div class="what">${items}</div>
+      <div class="when">${when}</div>
+      ${r.note?`<div class="note">${esc(r.note)}</div>`:''}
+    </article>`;
+  }).join('');
+}
+$('#list').addEventListener('click', async e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  const id = b.dataset.ret||b.dataset.undo||b.dataset.del;
+  const r = rentals.find(x=>x.id===id); if(!r) return;
+  if(b.dataset.del && !confirm(`${who(r)}의 대여 기록을 삭제할까요? 시트에서도 지워집니다.`)) return;
+  const before = {...r};
+  const restore = ()=>{ const i = rentals.findIndex(x=>x.id===id); if(i>=0) rentals[i] = before; else rentals = [...rentals, before]; };
+  try{
+    if(b.dataset.ret){
+      toast(`${who(r)} 교구를 반납 처리했습니다.`);
+      await write('return',{id}, ()=>{ rentals = rentals.map(x=>x.id===id?{...x,status:'returned',returnedOn:today()}:x); }, restore);
+    }else if(b.dataset.undo){
+      const over = (r.items||[]).find(x=>x.qty>available(x.id));
+      if(over) return toast(`${over.id} 수량이 부족해 반납을 취소할 수 없습니다.`);
+      toast('반납을 취소했습니다.');
+      await write('undo',{id}, ()=>{ rentals = rentals.map(x=>x.id===id?{...x,status:'active',returnedOn:''}:x); }, restore);
+    }else{
+      toast('기록을 삭제했습니다.');
+      await write('delete',{id, adminCode}, ()=>{ rentals = rentals.filter(x=>x.id!==id); }, restore);
+    }
+  }catch(err){ if(err.admin) setAdmin(''); toast(err.message + ' 원래대로 되돌렸습니다.'); }
+});
+$('#search').addEventListener('input', e=>{ query=e.target.value.trim(); renderList(); });
+document.querySelector('.tabs').addEventListener('click', e=>{
+  const t = e.target.dataset.tab; if(!t) return; tab=t; syncTabs(); renderList();
+});
+function syncTabs(){ document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected', b.dataset.tab===tab)); }
+
+function renderStats(){
+  const act = rentals.filter(r=>r.status==='active');
+  $('#statActive').textContent = act.length;
+}
+function renderAll(){
+  for(const id of Object.keys(cart)){ const av=available(id); if(av<=0) delete cart[id]; else if(cart[id]>av) cart[id]=av; }
+  renderCatalog(); renderPicked(); renderList(); renderStats(); renderDays();
+}
+
+let tt; function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),2600); }
+
+$('#adminBtn').addEventListener('click', async ()=>{
+  if(adminCode){ setAdmin(''); toast('관리자 모드를 끝냈습니다.'); return; }
+  const input = prompt('관리자 암호를 입력해 주세요.');
+  if(input == null || !input.trim()) return;
+  try{ await api('checkAdmin', { adminCode: input.trim() }); setAdmin(input.trim()); toast('관리자 모드로 바뀌었습니다.'); }
+  catch(err){ toast(err.message === 'SETUP' ? '구글 시트와 연결된 뒤에 사용할 수 있습니다.' : err.message); }
+});
+
+/* ---------- 시작 ---------- */
+renderAdmin();
+$('#mode').textContent = '대여 기록은 구글 시트의 \'대여 시트\' 탭에 저장됩니다. 1분마다 새로 불러옵니다.';
+// 지난번에 불러온 목록을 먼저 바로 보여 주고, 뒤에서 최신 내용으로 바꿈
+if(!notConfigured()){ try{ const c = JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); if(c && c.items) applyData(c, true); }catch{} }
+renderAll();
+refresh();
+setInterval(()=>{ if(document.visibilityState==='visible') refresh(); }, 60000);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') refresh(); });
+</script>
+</body>
+</html>
