@@ -458,10 +458,14 @@ function conflicts(){
 }
 
 /* ---------- 카탈로그 ---------- */
-function photoSrc(it){
-  if(it.photo) return /^https?:\/\//.test(it.photo) ? it.photo : PHOTO_DIR + encodeURIComponent(it.photo);
-  return PHOTO_DIR + encodeURIComponent(it.name) + '.jpg';
+// 사진 후보: 시트/드라이브 사진(여러 주소일 수 있음) → images 폴더 → 없으면 아이콘
+function photoCandidates(it){
+  const list = (it.photo ? String(it.photo).split('|') : []).map(u=>u.trim()).filter(Boolean)
+    .map(u=> /^https?:\/\//.test(u) ? u : PHOTO_DIR + encodeURIComponent(u));
+  list.push(PHOTO_DIR + encodeURIComponent(it.name) + '.jpg');
+  return list;
 }
+const photoSrc = it => photoCandidates(it).find(u=>!brokenPhotos.has(u)) || '';
 function renderCatalog(){
   const el = $('#catalog');
   if(!loaded){
@@ -490,7 +494,7 @@ function renderCatalog(){
       ? `<span class="tag plan">구입 예정</span> ${it.stock}${it.unit} 들어올 예정`
       : `이 기간 가능 <b>${av}</b> / ${it.stock}${it.unit}`;
     const src = photoSrc(it);
-    const pic = brokenPhotos.has(src)
+    const pic = !src
       ? `<div class="icon" aria-hidden="true">${it.icon}</div>`
       : `<img class="photo" referrerpolicy="no-referrer" src="${esc(src)}" alt="${esc(it.name)} 사진" loading="lazy" data-src="${esc(src)}">`;
     return `<div class="${cls}" data-id="${esc(it.id)}" role="group" aria-label="${esc(it.name)}">
@@ -517,6 +521,8 @@ document.addEventListener('error', e=>{
   if(!(img instanceof HTMLImageElement) || !img.classList.contains('photo')) return;
   brokenPhotos.add(img.dataset.src);
   const id = img.closest('.item')?.dataset.id;
+  const next = byId[id] ? photoSrc(byId[id]) : '';
+  if(next){ img.dataset.src = next; img.src = next; return; }
   const div = document.createElement('div'); div.className='icon'; div.setAttribute('aria-hidden','true');
   div.innerHTML = byId[id]?.icon || '';
   img.replaceWith(div);
