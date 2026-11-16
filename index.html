@@ -178,6 +178,8 @@ input[type=date]{min-width:0;max-width:100%}
 .modal button{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 16px;font-size:15px;font-weight:500;cursor:pointer}
 .modal .m-yes{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
 .modal .m-yes.danger{background:var(--red);border-color:var(--red);color:#fff}
+.errbox{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--soft-red);color:var(--red);border:1.5px solid var(--red);border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:15px;font-weight:500}
+.errbox button{border:1.5px solid var(--red);background:transparent;color:var(--red);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:13px;white-space:nowrap}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);
   background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-weight:500;opacity:0;
   transition:opacity .2s,transform .2s;pointer-events:none;z-index:10;max-width:90vw}
@@ -281,7 +283,7 @@ input[type=date]{min-width:0;max-width:100%}
    설정: Apps Script 웹 앱 주소를 따옴표 안에 붙여 넣으세요.
    예) 'https://script.google.com/macros/s/AKfy..../exec'
    ============================================================ */
-const API_URL = 'https://script.google.com/macros/s/AKfycbyRsWhDgHrR-vQCbGXherkVFhbw9tdhXvNQoGgx4M07mAFTWon3mwsK0d4rafnjL6qT/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzf5sS7-pdmgkDXMR3nlEDN9ozAIV1Ev8_pqFupkkL6jPSQoBFuzkJeDJxmqU0M9WkdQQ/exec';
 
 /* 사진 폴더: images/물품명.jpg 형식으로 올리면 자동으로 보입니다.
    시트에 '사진' 열을 만들어 파일명(예: blokus.png)이나 사진 주소를 적어도 됩니다. */
@@ -373,10 +375,30 @@ async function api(action, body = {}, retried = false, apply = true){
     throw new Error(data.error === 'PASSCODE' ? '암호가 맞지 않습니다.' : data.error);
   }
   if(apply) applyData(data);
+  if(data.photoVersion) syncPhotos(String(data.photoVersion));
   return data;
 }
 
 const CACHE_KEY = 'math-rental-cache';
+/* 앱 서버가 직접 보내 주는 사진 (드라이브 공유 설정과 상관없이 보임) */
+const PHOTO_KEY = 'math-rental-photos';
+let photoData = {}, photoVer = '';
+try{ const c = JSON.parse(localStorage.getItem(PHOTO_KEY)||'null'); if(c){ photoData = c.photos||{}; photoVer = c.v||''; } }catch{}
+let photoLoading = false;
+async function syncPhotos(ver){
+  if(!ver || ver === '0' || ver === photoVer || photoLoading) return;
+  photoLoading = true;
+  try{
+    const res = await fetch(`${API}?action=photos&t=${Date.now()}`);
+    const data = await res.json();
+    if(data.ok){
+      photoData = data.photos || {}; photoVer = ver;
+      try{ localStorage.setItem(PHOTO_KEY, JSON.stringify({v:ver, photos:photoData})); }catch{}
+      renderCatalog();
+    }
+  }catch(e){ console.warn('사진을 불러오지 못했습니다', e); }
+  finally{ photoLoading = false; }
+}
 let lastKey = '', dataChanged = false;
 function applyData(data, fromCache = false){
   const key = JSON.stringify([data.items, data.rentals]);
@@ -392,16 +414,21 @@ function applyData(data, fromCache = false){
 
 async function refresh(){
   if(pending) return;
-  try{ await api('list'); if(!dataChanged) return; }
-  catch(e){ if(!loaded) loadError = e.message; else { console.warn(e); return; } }
-  if(pending) return; // 그사이 시작된 저장이 있으면 그 결과를 기다림
-  renderAll();
+  const seq = writeSeq;
+  let data;
+  try{ data = await api('list', {}, false, false); }
+  catch(e){ if(!loaded){ loadError = e.message; renderAll(); } else console.warn(e); return; }
+  // 불러오는 사이에 반납·대여 등 저장이 있었다면, 이 (이전) 목록은 버림 → 방금 한 반납이 되돌아가 보이는 문제 방지
+  if(pending || seq !== writeSeq) return;
+  applyData(data);
+  if(dataChanged) renderAll();
 }
 
 /* 저장 작업: 화면에 먼저 반영하고(낙관적 업데이트), 서버 결과로 확정 */
-let pending = 0;
+let pending = 0, writeSeq = 0;
 async function write(action, body, optimistic, rollback){
-  pending++;
+  pending++; writeSeq++;
+  hideError();
   if(optimistic) optimistic();
   renderAll();
   try{
@@ -413,10 +440,22 @@ async function write(action, body, optimistic, rollback){
     pending--;
     if(rollback) rollback();
     renderAll();
+    if(!e.admin && e.message !== 'SETUP') showError(`저장하지 못했어요: ${e.message}`);
     if(!pending) refresh();
     throw e;
   }
 }
+// 저장 실패는 잠깐 뜨는 알림 대신, 닫을 때까지 화면에 남겨 둠
+function showError(msg){
+  let box = $('#errBox');
+  if(!box){
+    box = document.createElement('div'); box.id = 'errBox'; box.className = 'errbox'; box.setAttribute('role','alert');
+    $('#rentals').prepend(box);
+  }
+  box.innerHTML = `<span>${esc(msg)}</span><button type="button" aria-label="닫기">닫기</button>`;
+  box.querySelector('button').onclick = hideError;
+}
+function hideError(){ $('#errBox')?.remove(); }
 
 /* ---------- 기간 겹침 계산 ---------- */
 const isReserved = r => r.status==='active' && r.start > today();
@@ -460,8 +499,8 @@ function conflicts(){
 /* ---------- 카탈로그 ---------- */
 // 사진 후보: 시트/드라이브 사진(여러 주소일 수 있음) → images 폴더 → 없으면 아이콘
 function photoCandidates(it){
-  const list = (it.photo ? String(it.photo).split('|') : []).map(u=>u.trim()).filter(Boolean)
-    .map(u=> /^https?:\/\//.test(u) ? u : PHOTO_DIR + encodeURIComponent(u));
+  const list = (photoData[it.name] ? [photoData[it.name]] : []).concat(it.photo ? String(it.photo).split('|') : []).map(u=>u.trim()).filter(Boolean)
+    .map(u=> /^(https?:|data:)/.test(u) ? u : PHOTO_DIR + encodeURIComponent(u));
   list.push(PHOTO_DIR + encodeURIComponent(it.name) + '.jpg');
   return list;
 }
@@ -703,7 +742,7 @@ $('#rentals').addEventListener('click', async e=>{
       toast('기록을 삭제했습니다.');
       await write('delete',{id, adminCode}, ()=>{ rentals = rentals.filter(x=>x.id!==id); }, restore);
     }
-  }catch(err){ if(err.admin) setAdmin(''); toast(err.message + ' 원래대로 되돌렸습니다.'); }
+  }catch(err){ if(err.admin){ setAdmin(''); toast(err.message); } else toast('저장하지 못해 원래대로 되돌렸습니다.'); }
 });
 $('#search').addEventListener('input', e=>{ query=e.target.value.trim(); renderList(); });
 $('#clearSearch').addEventListener('click', ()=>{ query=''; $('#search').value=''; renderList(); });
@@ -767,7 +806,7 @@ const askInput = (title) => openModal({title, okLabel:'확인', input:true});
 
 /* ---------- 시작 ---------- */
 renderAdmin();
-$('#mode').textContent = '대여·예약 기록은 구글 시트의 \'대여 시트\' 탭에 저장됩니다. 1분마다 새로 불러옵니다.';
+$('#mode').textContent = '대여·예약 기록은 구글 시트의 \'대여 시트\' 탭에 저장됩니다. 1분마다 새로 불러옵니다. (앱 버전 2026-10-b)';
 // 지난번에 불러온 목록을 먼저 바로 보여 주고, 뒤에서 최신 내용으로 바꿈
 if(!notConfigured()){ try{ const c = JSON.parse(localStorage.getItem(CACHE_KEY)||'null'); if(c && c.items) applyData(c, true); }catch{} }
 renderAll();
